@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="page-heading"><a class="back-link" href="{{ url_for('organiser_dashboard') }}"><i data-lucide="arrow-left"></i> Back to overview</a><p class="eyebrow">ATTENDEE LIST</p><h1>{{ event['name'] }}</h1><p class="muted">{{ attendees|length }} registered · capacity {{ event['capacity'] }}</p></section>
+<section class="panel attendee-panel"><div class="panel-heading"><div><p class="eyebrow">REGISTRATIONS</p><h2>People coming</h2></div><span class="status-pill"><i></i>{{ attendees|length }} attendees</span></div>
+{% if attendees %}<div class="event-table-wrap"><table class="data-table"><thead><tr><th>NAME</th><th>EMAIL</th><th>REGISTERED</th></tr></thead><tbody>{% for person in attendees %}<tr><td><div class="event-name-cell"><span class="avatar small-avatar">{{ person['name'][0]|upper }}</span><strong>{{ person['name'] }}</strong></div></td><td>{{ person['email'] }}</td><td>{{ person['created_at'] }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty-state"><i data-lucide="users"></i><strong>No registrations yet.</strong><span>New attendees will appear here.</span></div>{% endif %}</section>
+{% endblock %}

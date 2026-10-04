@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="page-heading heading-row">
+  <div><p class="eyebrow">MONDAY, YOUR EVENTS AT A GLANCE</p><h1>Good work starts here, {{ current_user['name'].split()[0] }}.</h1><p class="muted">A live pulse on the events you are bringing together.</p></div>
+  <a class="button button-primary" href="{{ url_for('create_event') }}"><i data-lucide="plus"></i> Create event</a>
+</section>
+<section class="metric-grid" data-poll-url="{{ url_for('dashboard_stats') }}" data-poll-interval="12000">
+  <article class="metric-card metric-lime"><div class="metric-top"><span>ACTIVE EVENTS</span><i data-lucide="calendar-days"></i></div><strong data-stat="events">{{ summary['event_count'] }}</strong><small>Across your workspace</small></article>
+  <article class="metric-card metric-coral"><div class="metric-top"><span>REGISTRATIONS</span><i data-lucide="users"></i></div><strong data-stat="registrations">{{ summary['registrations'] }}</strong><small>Confirmed attendees</small></article>
+  <article class="metric-card metric-blue"><div class="metric-top"><span>TOTAL CAPACITY</span><i data-lucide="chart-no-axes-column-increasing"></i></div><strong data-stat="capacity">{{ summary['capacity'] }}</strong><small>Available places</small></article>
+</section>
+<section class="content-grid">
+  <div class="panel event-panel">
+    <div class="panel-heading"><div><p class="eyebrow">YOUR PROGRAMME</p><h2>Upcoming events</h2></div><a class="text-link" href="{{ url_for('analytics_page') }}">View performance <i data-lucide="arrow-up-right"></i></a></div>
+    {% if events %}<div class="event-table-wrap"><table class="data-table"><thead><tr><th>EVENT</th><th>DATE</th><th>ATTENDEES</th><th>STATUS</th><th></th></tr></thead><tbody>
+      {% for event in events %}<tr><td><div class="event-name-cell"><span class="event-initial">{{ event['category'][0]|upper }}</span><span><strong>{{ event['name'] }}</strong><small>{{ event['category'] }} · {{ event['location'] }}</small></span></div></td><td>{{ event['date'] }}<small class="table-sub">{{ event['time'] }}</small></td><td>{{ event['registrations'] }} / {{ event['capacity'] }}</td><td><span class="status-pill"><i></i>{{ event['status']|title }}</span></td><td><a class="icon-link" title="Edit event" href="{{ url_for('edit_event', event_id=event['id']) }}"><i data-lucide="pencil"></i></a></td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<div class="empty-state"><i data-lucide="calendar-plus"></i><strong>Your programme is clear.</strong><span>Create an event to start tracking registrations.</span></div>{% endif %}
+  </div>
+  <aside class="panel activity-panel"><div class="panel-heading"><div><p class="eyebrow">EVENT PIPELINE</p><h2>Recent activity</h2></div><span class="live-tag"><i></i>LIVE</span></div>
+    {% if logs %}<div class="activity-list">{% for log in logs %}<div class="activity-item"><span class="activity-marker"><i data-lucide="zap"></i></span><div><strong>{{ log['detail'] }}</strong><small>{{ log['created_at'] }}</small></div></div>{% endfor %}</div>{% else %}<div class="empty-state compact"><span>Event actions will appear here as they happen.</span></div>{% endif %}
+    <a class="panel-footer-link" href="{{ url_for('notifications') }}">See notifications{% if unread %}<span>{{ unread }}</span>{% endif %}<i data-lucide="arrow-right"></i></a>
+  </aside>
+</section>
+{% endblock %}

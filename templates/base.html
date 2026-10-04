@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f5f2">
+  <title>{{ page_title }} · Gatherline</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
+</head>
+<body class="{% if current_user %}app-body{% else %}auth-body{% endif %}">
+{% if current_user %}
+  <aside class="sidebar">
+    <a class="brand" href="{{ url_for('dashboard') }}" aria-label="Gatherline home">
+      <span class="brand-mark"><i data-lucide="activity"></i></span>
+      <span>gatherline<span class="brand-dot">.</span></span>
+    </a>
+    <div class="workspace-label">WORKSPACE</div>
+    <nav class="side-nav" aria-label="Main navigation">
+      {% if current_user['role'] == 'organiser' %}
+        <a class="nav-link {% if request.endpoint == 'organiser_dashboard' %}active{% endif %}" href="{{ url_for('organiser_dashboard') }}"><i data-lucide="layout-dashboard"></i><span>Overview</span></a>
+        <a class="nav-link {% if request.endpoint in ('create_event', 'edit_event') %}active{% endif %}" href="{{ url_for('create_event') }}"><i data-lucide="calendar-plus"></i><span>New event</span></a>
+        <a class="nav-link {% if request.endpoint == 'analytics_page' %}active{% endif %}" href="{{ url_for('analytics_page') }}"><i data-lucide="chart-no-axes-column-increasing"></i><span>Performance</span></a>
+        <a class="nav-link" href="{{ url_for('download_report') }}"><i data-lucide="download"></i><span>Export report</span></a>
+      {% else %}
+        <a class="nav-link {% if request.endpoint == 'customer_dashboard' %}active{% endif %}" href="{{ url_for('customer_dashboard') }}"><i data-lucide="layout-dashboard"></i><span>My activity</span></a>
+        <a class="nav-link {% if request.endpoint == 'browse_events' %}active{% endif %}" href="{{ url_for('browse_events') }}"><i data-lucide="compass"></i><span>Discover events</span></a>
+      {% endif %}
+      <a class="nav-link {% if request.endpoint == 'notifications' %}active{% endif %}" href="{{ url_for('notifications') }}"><i data-lucide="bell"></i><span>Notifications</span><span class="nav-count" data-stat="unread">0</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="user-chip">
+        <span class="avatar">{{ current_user['name'][0]|upper }}</span>
+        <span class="user-meta"><strong>{{ current_user['name'] }}</strong><small>{{ current_user['role']|title }}</small></span>
+      </div>
+      <form action="{{ url_for('logout') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="signout" type="submit"><i data-lucide="log-out"></i><span>Sign out</span></button>
+      </form>
+      <div class="system-state"><span class="state-dot"></span>LOCAL SYSTEM <span>ONLINE</span></div>
+    </div>
+  </aside>
+{% endif %}
+<main class="main-shell {% if not current_user %}auth-main{% endif %}">
+  {% if current_user %}
+  <header class="topbar">
+    <div class="breadcrumb"><span>Workspace</span><i data-lucide="chevron-right"></i><strong>{{ page_title }}</strong></div>
+    <a class="topbar-date" href="{{ url_for('notifications') }}"><i data-lucide="bell"></i><span>Activity</span></a>
+  </header>
+  {% endif %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}<div class="flash-stack" role="status">
+      {% for category, message in messages %}<div class="flash flash-{{ category }}"><span>{{ message }}</span><button type="button" class="flash-close" aria-label="Dismiss"><i data-lucide="x"></i></button></div>{% endfor %}
+    </div>{% endif %}
+  {% endwith %}
+  <div class="page-content">{% block content %}{% endblock %}</div>
+</main>
+<script>
+  if (window.lucide) window.lucide.createIcons();
+</script>
+</body>
+</html>

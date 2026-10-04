@@ -1,0 +1,5 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">ACTIVITY STREAM</p><h1>Notifications</h1><p class="muted">Updates from your events and registrations.</p></section>
+<section class="panel notification-panel">{% if notifications %}<div class="notification-list">{% for item in notifications %}<article class="notification-item"><span class="activity-marker"><i data-lucide="bell"></i></span><div><strong>{{ item['message'] }}</strong><small>{{ item['created_at'] }}</small></div><span class="notification-state {% if item['is_read'] %}read{% endif %}">{% if item['is_read'] %}Read{% else %}New{% endif %}</span></article>{% endfor %}</div>{% else %}<div class="empty-state"><i data-lucide="bell-dot"></i><strong>All quiet for now.</strong><span>Updates will land here as activity happens.</span></div>{% endif %}</section>
+{% endblock %}

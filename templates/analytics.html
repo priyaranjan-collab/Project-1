@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="page-heading heading-row"><div><p class="eyebrow">OPERATIONS INTELLIGENCE</p><h1>Event performance</h1><p class="muted">Capacity and registration metrics, calculated across worker processes.</p></div><a class="button button-outline" href="{{ url_for('download_report') }}"><i data-lucide="download"></i> Download CSV</a></section>
+<section class="metric-grid analytics-summary">
+  <article class="metric-card metric-lime"><div class="metric-top"><span>EVENTS TRACKED</span><i data-lucide="calendar-days"></i></div><strong>{{ metrics['event_count'] }}</strong><small>In your workspace</small></article>
+  <article class="metric-card metric-coral"><div class="metric-top"><span>REGISTRATIONS</span><i data-lucide="users"></i></div><strong>{{ metrics['registration_count'] }}</strong><small>Across all events</small></article>
+  <article class="metric-card metric-blue"><div class="metric-top"><span>CAPACITY ALERTS</span><i data-lucide="triangle-alert"></i></div><strong>{{ metrics['alerts'] }}</strong><small>Events at 75% or above</small></article>
+</section>
+<section class="panel performance-panel"><div class="panel-heading"><div><p class="eyebrow">CAPACITY MONITOR</p><h2>Registration by event</h2></div><span class="live-tag"><i></i>PROCESSED</span></div>
+{% if metrics['events'] %}<div class="performance-list">{% for event in metrics['events'] %}<article class="performance-row"><div class="performance-title"><span class="event-initial">{{ event['category'][0]|upper }}</span><span><strong>{{ event['name'] }}</strong><small>{{ event['date'] }} · {{ event['category'] }}</small></span></div><div class="performance-meter"><div class="capacity-track"><span style="width: {{ [event['utilization'], 100]|min }}%"></span></div><small>{{ event['registrations'] }} / {{ event['capacity'] }} seats <b>{{ event['utilization'] }}%</b></small></div>{% if event['capacity_alert'] %}<span class="alert-pill"><i data-lucide="triangle-alert"></i>75%+ full</span>{% else %}<span class="healthy-pill"><i data-lucide="check"></i>On track</span>{% endif %}</article>{% endfor %}</div>{% else %}<div class="empty-state"><i data-lucide="chart-no-axes-column-increasing"></i><strong>No event metrics yet.</strong><span>Create an event to start monitoring performance.</span></div>{% endif %}
+</section>
+<p class="footnote"><i data-lucide="cpu"></i> Per-event capacity calculations use Python worker processes. Alert thresholds are derived with SymPy.</p>
+{% endblock %}

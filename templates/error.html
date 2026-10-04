@@ -1,0 +1,4 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="error-page"><span class="error-code">{{ code }}</span><p class="eyebrow">A SMALL DETOUR</p><h1>{{ message }}</h1><a class="button button-primary" href="{{ url_for('dashboard') if current_user else url_for('login') }}"><i data-lucide="arrow-left"></i> Return to workspace</a></section>
+{% endblock %}

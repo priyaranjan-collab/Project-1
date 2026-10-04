@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="page-heading"><a class="back-link" href="{{ url_for('organiser_dashboard') }}"><i data-lucide="arrow-left"></i> Back to overview</a><p class="eyebrow">EVENT DETAILS</p><h1>{{ 'Edit event' if event else 'Create an event' }}</h1><p class="muted">Set the essentials. You can update details later.</p></section>
+<form method="post" class="panel event-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="form-grid">
+    <label class="span-two">Event name<input name="name" maxlength="100" required value="{{ request.form.get('name', event['name'] if event else '') }}" placeholder="e.g. Creative coding night"></label>
+    <label class="span-two">Description<textarea name="description" maxlength="2000" rows="4" required placeholder="What will people experience?">{{ request.form.get('description', event['description'] if event else '') }}</textarea></label>
+    <label>Date<input type="date" name="date" min="{{ today }}" required value="{{ request.form.get('date', event['date'] if event else '') }}"></label>
+    <label>Start time<input type="time" name="time" required value="{{ request.form.get('time', event['time'] if event else '') }}"></label>
+    <label>Location<input name="location" maxlength="120" required value="{{ request.form.get('location', event['location'] if event else '') }}" placeholder="Venue or online"></label>
+    <label>Category<input name="category" maxlength="40" required value="{{ request.form.get('category', event['category'] if event else '') }}" placeholder="Technology"></label>
+    <label>Capacity<input type="number" name="capacity" min="1" max="100000" required value="{{ request.form.get('capacity', event['capacity'] if event else '') }}"></label>
+  </div>
+  <div class="form-actions"><a class="button button-quiet" href="{{ url_for('organiser_dashboard') }}">Cancel</a><button class="button button-primary" type="submit"><i data-lucide="check"></i>{{ 'Save changes' if event else 'Publish event' }}</button></div>
+</form>
+{% endblock %}
