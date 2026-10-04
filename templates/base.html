@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f3f5f2">
-  <title>{{ page_title }} · Gatherline</title>
+  <title>{{ page_title }} · Event Management</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -15,9 +15,9 @@
 <body class="{% if current_user %}app-body{% else %}auth-body{% endif %}">
 {% if current_user %}
   <aside class="sidebar">
-    <a class="brand" href="{{ url_for('dashboard') }}" aria-label="Gatherline home">
+    <a class="brand" href="{{ url_for('dashboard') }}" aria-label="Event Management home">
       <span class="brand-mark"><i data-lucide="activity"></i></span>
-      <span>gatherline<span class="brand-dot">.</span></span>
+      <span>event management<span class="brand-dot">.</span></span>
     </a>
     <div class="workspace-label">WORKSPACE</div>
     <nav class="side-nav" aria-label="Main navigation">

@@ -1,6 +1,6 @@
-# Gatherline | Event-Driven Production Monitoring
+# Event Management | Event-Driven Production Monitoring
 
-Gatherline is a local Flask + SQLite college project for event organisers and customers. Organisers manage events and inspect capacity/registration metrics; customers discover events, register, and cancel. Event actions are validated, committed with an audit log and notifications, then sent as best-effort JSON messages to an optional TCP socket server.
+Event Management is a local Flask + SQLite college project for event organisers and customers. Organisers manage events and inspect capacity/registration metrics; customers discover events, register, and cancel. Event actions are validated, committed with an audit log and notifications, then sent as best-effort JSON messages to an optional TCP socket server.
 
 ## Project at a glance
 

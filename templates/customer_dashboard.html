@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-<section class="page-heading heading-row"><div><p class="eyebrow">YOUR GATHERLINE</p><h1>Make room for something good.</h1><p class="muted">Keep your plans close and find your next event.</p></div><a class="button button-primary" href="{{ url_for('browse_events') }}"><i data-lucide="compass"></i> Explore events</a></section>
+<section class="page-heading heading-row"><div><p class="eyebrow">YOUR EVENT MANAGEMENT</p><h1>Make room for something good.</h1><p class="muted">Keep your plans close and find your next event.</p></div><a class="button button-primary" href="{{ url_for('browse_events') }}"><i data-lucide="compass"></i> Explore events</a></section>
 <section class="metric-grid customer-metrics" data-poll-url="{{ url_for('dashboard_stats') }}" data-poll-interval="12000">
   <article class="metric-card metric-lime"><div class="metric-top"><span>MY REGISTRATIONS</span><i data-lucide="ticket-check"></i></div><strong data-stat="registrations">{{ event_count }}</strong><small>Your upcoming plans</small></article>
   <article class="metric-card metric-coral"><div class="metric-top"><span>OPEN EVENTS</span><i data-lucide="calendar-search"></i></div><strong data-stat="upcoming">{{ upcoming }}</strong><small>Ready to discover</small></article>
