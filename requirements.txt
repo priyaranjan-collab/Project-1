@@ -1,2 +1,4 @@
 Flask>=3.0,<4.0
 sympy>=1.12,<2.0
+ultralytics>=8.2,<9.0
+Pillow>=10.0,<12.0

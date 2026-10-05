@@ -174,7 +174,7 @@ svg { width: 17px; height: 17px; stroke-width: 1.8; }
 .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 23px; padding-top: 18px; border-top: 1px solid #edf0eb; }
 .performance-panel { margin-top: 20px; }
 .performance-list { padding: 0 20px; }
-.performance-row { display: grid; grid-template-columns: minmax(180px, 1.2fr) minmax(130px, 1fr) 90px; align-items: center; gap: 20px; padding: 17px 0; border-bottom: 1px solid #eff1ed; }
+.performance-row { display: grid; grid-template-columns: minmax(180px, 1.2fr) minmax(130px, 1fr) minmax(150px, auto); align-items: center; gap: 20px; padding: 17px 0; border-bottom: 1px solid #eff1ed; }
 .performance-row:last-child { border-bottom: 0; }
 .performance-title { display: flex; align-items: center; gap: 10px; }
 .performance-title > span:last-child { display: grid; gap: 5px; }
@@ -183,9 +183,25 @@ svg { width: 17px; height: 17px; stroke-width: 1.8; }
 .performance-meter .capacity-track { height: 7px; }
 .performance-meter small { display: flex; justify-content: space-between; margin-top: 6px; color: #858f85; font-size: 9px; }
 .performance-meter small b { color: #485b49; }
+.performance-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .alert-pill { justify-self: end; padding: 6px 8px; border-radius: 3px; color: #9d513b; background: #fbebe5; font-size: 9px; white-space: nowrap; }
 .alert-pill svg, .healthy-pill svg { width: 12px; height: 12px; }
 .healthy-pill { justify-self: end; font-size: 9px; white-space: nowrap; }
+.crowd-trigger { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid #dfe7db; border-radius: 50%; color: #2a5639; background: #f1f7ee; cursor: pointer; box-shadow: 0 0 0 0 rgba(40, 83, 51, .15); transition: transform .18s ease, box-shadow .18s ease; }
+.crowd-trigger:hover { transform: translateY(-1px) scale(1.02); box-shadow: 0 0 0 6px rgba(40, 83, 51, .08); }
+.crowd-trigger svg { width: 14px; height: 14px; }
+.crowd-modal-backdrop { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(25, 34, 27, .54); z-index: 50; }
+.crowd-modal-backdrop.is-open { display: flex; }
+.crowd-modal { position: relative; width: min(560px, 100%); padding: 22px 22px 18px; border: 1px solid #e7ecdf; border-radius: 8px; background: #fff; box-shadow: 0 18px 52px rgba(28, 39, 30, .2); }
+.crowd-close { position: absolute; top: 14px; right: 14px; width: 30px; height: 30px; border: 0; border-radius: 50%; color: #56625a; background: #f2f5f0; cursor: pointer; font-size: 20px; line-height: 1; }
+.crowd-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; padding-right: 26px; }
+.crowd-badge { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 12px 12px 12px 4px; color: #2f573b; background: #d9eed9; }
+.crowd-badge svg { width: 18px; height: 18px; }
+.crowd-header h3 { margin: 4px 0 0; font: 700 20px var(--display); }
+.crowd-upload-label { display: grid; gap: 8px; margin-bottom: 16px; color: #495547; font-size: 11px; font-weight: 700; }
+.crowd-upload-label input { width: 100%; padding: 12px 10px; border: 1px solid #dfe5dd; border-radius: 5px; background: #f9faf7; }
+.crowd-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.crowd-status { margin-top: 18px; padding: 12px 10px; border-radius: 5px; background: #f1f7ee; color: #3d5f46; font-size: 11px; line-height: 1.55; }
 .footnote { display: flex; align-items: center; gap: 7px; margin-top: 15px; color: #828c82; font-size: 10px; }
 .footnote svg { width: 14px; height: 14px; }
 .small-avatar { width: 27px; height: 27px; font-size: 10px; }

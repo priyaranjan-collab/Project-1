@@ -7,7 +7,107 @@
   <article class="metric-card metric-blue"><div class="metric-top"><span>CAPACITY ALERTS</span><i data-lucide="triangle-alert"></i></div><strong>{{ metrics['alerts'] }}</strong><small>Events at 75% or above</small></article>
 </section>
 <section class="panel performance-panel"><div class="panel-heading"><div><p class="eyebrow">CAPACITY MONITOR</p><h2>Registration by event</h2></div><span class="live-tag"><i></i>PROCESSED</span></div>
-{% if metrics['events'] %}<div class="performance-list">{% for event in metrics['events'] %}<article class="performance-row"><div class="performance-title"><span class="event-initial">{{ event['category'][0]|upper }}</span><span><strong>{{ event['name'] }}</strong><small>{{ event['date'] }} · {{ event['category'] }}</small></span></div><div class="performance-meter"><div class="capacity-track"><span style="width: {{ [event['utilization'], 100]|min }}%"></span></div><small>{{ event['registrations'] }} / {{ event['capacity'] }} seats <b>{{ event['utilization'] }}%</b></small></div>{% if event['capacity_alert'] %}<span class="alert-pill"><i data-lucide="triangle-alert"></i>75%+ full</span>{% else %}<span class="healthy-pill"><i data-lucide="check"></i>On track</span>{% endif %}</article>{% endfor %}</div>{% else %}<div class="empty-state"><i data-lucide="chart-no-axes-column-increasing"></i><strong>No event metrics yet.</strong><span>Create an event to start monitoring performance.</span></div>{% endif %}
+{% if metrics['events'] %}<div class="performance-list">{% for event in metrics['events'] %}<article class="performance-row"><div class="performance-title"><span class="event-initial">{{ event['category'][0]|upper }}</span><span><strong>{{ event['name'] }}</strong><small>{{ event['date'] }} · {{ event['category'] }}</small></span></div><div class="performance-meter"><div class="capacity-track"><span style="width: {{ [event['utilization'], 100]|min }}%"></span></div><small>{{ event['registrations'] }} / {{ event['capacity'] }} seats <b>{{ event['utilization'] }}%</b></small></div><div class="performance-actions">{% if event['capacity_alert'] %}<span class="alert-pill"><i data-lucide="triangle-alert"></i>75%+ full</span>{% else %}<span class="healthy-pill"><i data-lucide="check"></i>On track</span>{% endif %}<button type="button" class="crowd-trigger" data-event-id="{{ event['id'] }}" data-event-name="{{ event['name'] }}" aria-label="Count crowd for {{ event['name'] }}"><i data-lucide="scan-eye"></i></button></div></article>{% endfor %}</div>{% else %}<div class="empty-state"><i data-lucide="chart-no-axes-column-increasing"></i><strong>No event metrics yet.</strong><span>Create an event to start monitoring performance.</span></div>{% endif %}
 </section>
 <p class="footnote"><i data-lucide="cpu"></i> Per-event capacity calculations use Python worker processes. Alert thresholds are derived with SymPy.</p>
+
+<div class="crowd-modal-backdrop" id="crowdModal" aria-hidden="true">
+  <div class="crowd-modal" role="dialog" aria-modal="true" aria-labelledby="crowdEventName">
+    <button type="button" class="crowd-close" id="closeCrowdModal" aria-label="Close crowd tool">×</button>
+    <div class="crowd-header">
+      <div class="crowd-badge"><i data-lucide="scan-eye"></i></div>
+      <div>
+        <p class="eyebrow">CROWD INTELLIGENCE</p>
+        <h3 id="crowdEventName">Event</h3>
+      </div>
+    </div>
+    <form id="crowdForm" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="crowd-upload-label">
+        <span>Upload crowd image</span>
+        <input type="file" name="image" accept="image/*" required>
+      </label>
+      <div class="crowd-actions">
+        <button type="submit" class="button button-primary">Counter</button>
+        <button type="button" class="button button-quiet" id="resetCrowdEstimate">Reset</button>
+      </div>
+    </form>
+    <div id="crowdStatus" class="crowd-status">No count yet. Upload an image to update the seat estimate.</div>
+  </div>
+</div>
+
+<script>
+  const crowdModal = document.getElementById('crowdModal');
+  const crowdForm = document.getElementById('crowdForm');
+  const crowdStatus = document.getElementById('crowdStatus');
+  const crowdEventName = document.getElementById('crowdEventName');
+  const closeCrowdModal = document.getElementById('closeCrowdModal');
+  const resetCrowdEstimate = document.getElementById('resetCrowdEstimate');
+  let activeEventId = null;
+
+  document.querySelectorAll('.crowd-trigger').forEach((button) => {
+    button.addEventListener('click', () => {
+      activeEventId = button.dataset.eventId;
+      crowdEventName.textContent = button.dataset.eventName;
+      crowdStatus.textContent = 'No count yet. Upload an image to update the seat estimate.';
+      crowdModal.classList.add('is-open');
+      crowdModal.setAttribute('aria-hidden', 'false');
+    });
+  });
+
+  const closeModal = () => {
+    crowdModal.classList.remove('is-open');
+    crowdModal.setAttribute('aria-hidden', 'true');
+    crowdForm.reset();
+  };
+
+  closeCrowdModal.addEventListener('click', closeModal);
+  crowdModal.addEventListener('click', (event) => {
+    if (event.target === crowdModal) closeModal();
+  });
+
+  crowdForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!activeEventId) return;
+
+    const formData = new FormData(crowdForm);
+    crowdStatus.textContent = 'Processing...';
+
+    try {
+      const response = await fetch(`/organiser/events/${activeEventId}/crowd-count`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' },
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || 'Crowd detection failed.');
+      }
+      crowdStatus.textContent = `Detected ${payload.count} people. The event seats have been refreshed.`;
+      setTimeout(() => window.location.reload(), 900);
+    } catch (error) {
+      crowdStatus.textContent = error.message || 'Crowd detection failed.';
+    }
+  });
+
+  resetCrowdEstimate.addEventListener('click', async () => {
+    if (!activeEventId) return;
+    const resetForm = new FormData();
+    resetForm.append('csrf_token', '{{ csrf_token() }}');
+    try {
+      const response = await fetch(`/organiser/events/${activeEventId}/crowd-reset`, {
+        method: 'POST',
+        body: resetForm,
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Reset failed.');
+      crowdStatus.textContent = 'Crowd estimate reset.';
+      setTimeout(() => window.location.reload(), 500);
+    } catch (error) {
+      crowdStatus.textContent = error.message || 'Reset failed.';
+    }
+  });
+</script>
 {% endblock %}

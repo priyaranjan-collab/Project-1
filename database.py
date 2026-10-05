@@ -44,6 +44,13 @@ CREATE TABLE IF NOT EXISTS event_attendance (
     checked_in_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (event_id, user_id)
 );
+CREATE TABLE IF NOT EXISTS event_crowd_counts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER NOT NULL UNIQUE REFERENCES events(id) ON DELETE CASCADE,
+    detected_count INTEGER NOT NULL,
+    image_name TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 CREATE TABLE IF NOT EXISTS event_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     event_id INTEGER REFERENCES events(id) ON DELETE SET NULL,
@@ -62,6 +69,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_events_organiser ON events(organiser_id);
 CREATE INDEX IF NOT EXISTS idx_registrations_event ON registrations(event_id);
 CREATE INDEX IF NOT EXISTS idx_event_attendance_event ON event_attendance(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_crowd_counts_event ON event_crowd_counts(event_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read);
 CREATE INDEX IF NOT EXISTS idx_event_logs_created ON event_logs(created_at);
 """
