@@ -99,14 +99,21 @@ def create_app(test_config=None):
         user = current_user()
         db = get_db()
         summary = db.execute(
-            """SELECT COUNT(DISTINCT e.id) AS event_count, COUNT(r.id) AS registrations,
+            """SELECT COUNT(DISTINCT e.id) AS event_count,
+                      COUNT(DISTINCT r.id) AS registrations,
+                      COUNT(DISTINCT a.id) AS checkins,
                       COALESCE(SUM(e.capacity), 0) AS capacity
-               FROM events e LEFT JOIN registrations r ON r.event_id = e.id
+               FROM events e
+               LEFT JOIN registrations r ON r.event_id = e.id
+               LEFT JOIN event_attendance a ON a.event_id = e.id
                WHERE e.organiser_id = ?""", (user["id"],)
         ).fetchone()
         events = db.execute(
-            """SELECT e.*, COUNT(r.id) AS registrations FROM events e
-               LEFT JOIN registrations r ON r.event_id = e.id WHERE e.organiser_id = ?
+            """SELECT e.*, COUNT(DISTINCT r.id) AS registrations, COUNT(DISTINCT a.id) AS checkins
+               FROM events e
+               LEFT JOIN registrations r ON r.event_id = e.id
+               LEFT JOIN event_attendance a ON a.event_id = e.id
+               WHERE e.organiser_id = ?
                GROUP BY e.id ORDER BY e.date, e.time LIMIT 6""", (user["id"],)
         ).fetchall()
         logs = db.execute(
@@ -125,8 +132,13 @@ def create_app(test_config=None):
         user = current_user()
         db = get_db()
         registrations = db.execute(
-            """SELECT e.*, r.created_at AS registered_at FROM registrations r
-               JOIN events e ON e.id = r.event_id WHERE r.user_id = ?
+            """SELECT e.*, r.created_at AS registered_at,
+                      a.checked_in_at,
+                      CASE WHEN a.id IS NOT NULL THEN 1 ELSE 0 END AS is_checked_in
+               FROM registrations r
+               JOIN events e ON e.id = r.event_id
+               LEFT JOIN event_attendance a ON a.event_id = e.id AND a.user_id = r.user_id
+               WHERE r.user_id = ?
                ORDER BY e.date, e.time LIMIT 5""", (user["id"],)
         ).fetchall()
         event_count = db.execute(
@@ -219,8 +231,12 @@ def create_app(test_config=None):
         if event is None:
             abort(404)
         attendees = get_db().execute(
-            """SELECT u.name, u.email, r.created_at FROM registrations r
-               JOIN users u ON u.id = r.user_id WHERE r.event_id = ? ORDER BY r.created_at""",
+            """SELECT u.name, u.email, r.created_at,
+                      a.checked_in_at, a.sensor_name
+               FROM registrations r
+               JOIN users u ON u.id = r.user_id
+               LEFT JOIN event_attendance a ON a.event_id = r.event_id AND a.user_id = r.user_id
+               WHERE r.event_id = ? ORDER BY r.created_at""",
             (event_id,),
         ).fetchall()
         return render_template("registrations.html", page_title="Attendees", event=event,
@@ -242,6 +258,16 @@ def create_app(test_config=None):
         try:
             EventManager(get_db()).cancel_registration(event_id, current_user()["id"])
             flash("Registration cancelled.", "success")
+        except EventValidationError as error:
+            flash(str(error), "error")
+        return redirect(request.referrer or url_for("customer_dashboard"))
+
+    @app.post("/customer/events/<int:event_id>/sensor-entry")
+    @role_required("customer")
+    def sensor_entry(event_id):
+        try:
+            EventManager(get_db()).mark_attendance(event_id, current_user()["id"], "IR")
+            flash("IR entry logged. The organiser can see it on the dashboard.", "success")
         except EventValidationError as error:
             flash(str(error), "error")
         return redirect(request.referrer or url_for("customer_dashboard"))
@@ -284,13 +310,18 @@ def create_app(test_config=None):
         ).fetchone()[0]
         if user["role"] == "organiser":
             values = db.execute(
-                """SELECT COUNT(DISTINCT e.id) AS events, COUNT(r.id) AS registrations,
+                """SELECT COUNT(DISTINCT e.id) AS events,
+                          COUNT(DISTINCT r.id) AS registrations,
+                          COUNT(DISTINCT a.id) AS checkins,
                           COALESCE(SUM(e.capacity), 0) AS capacity
-                   FROM events e LEFT JOIN registrations r ON r.event_id = e.id
+                   FROM events e
+                   LEFT JOIN registrations r ON r.event_id = e.id
+                   LEFT JOIN event_attendance a ON a.event_id = e.id
                    WHERE e.organiser_id = ?""", (user["id"],)
             ).fetchone()
             return jsonify({"events": values["events"], "registrations": values["registrations"],
-                            "capacity": values["capacity"], "unread": unread})
+                            "capacity": values["capacity"], "checkins": values["checkins"],
+                            "unread": unread})
         registrations = db.execute(
             "SELECT COUNT(*) FROM registrations WHERE user_id = ?", (user["id"],)
         ).fetchone()[0]

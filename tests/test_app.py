@@ -164,6 +164,38 @@ class DashboardTestCase(unittest.TestCase):
         self.assertNotEqual(stored, "customer123")
         self.assertTrue(stored.startswith("scrypt:"))
 
+    def test_11_customer_ir_checkin_is_recorded_and_visible_on_organiser_dashboard(self):
+        self.login("customer@example.com", "customer123")
+        event_id = self.event_id()
+        self.client.post(
+            f"/customer/events/{event_id}/register",
+            data={"csrf_token": self.token()},
+        )
+
+        response = self.client.post(
+            f"/customer/events/{event_id}/sensor-entry",
+            data={"csrf_token": self.token()},
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"IR entry logged", response.data)
+
+        with closing(sqlite3.connect(self.database)) as connection:
+            customer_id = connection.execute(
+                "SELECT id FROM users WHERE email = ?", ("customer@example.com",)
+            ).fetchone()[0]
+            self.assertEqual(connection.execute(
+                "SELECT COUNT(*) FROM event_attendance WHERE event_id = ? AND user_id = ?",
+                (event_id, customer_id),
+            ).fetchone()[0], 1)
+
+        self.client.post("/logout", data={"csrf_token": self.token()}, follow_redirects=True)
+        self.login("organiser@example.com", "organiser123")
+        dashboard = self.client.get("/organiser")
+        self.assertEqual(dashboard.status_code, 200)
+        self.assertIn(b"1", dashboard.data)
+        self.assertIn(b"IR check-ins", dashboard.data)
+
 
 if __name__ == "__main__":
     unittest.main()

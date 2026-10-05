@@ -150,3 +150,31 @@ class EventManager:
                          [(customer_id, detail), (row["organiser_id"],
                                                   f"A customer cancelled for {row['name']}.")])
         self._dispatch(event_id, customer_id, "registration.cancelled", detail)
+
+    def mark_attendance(self, event_id, customer_id, sensor_name="IR"):
+        row = self.connection.execute(
+            """SELECT e.name, e.organiser_id, u.name AS customer_name
+               FROM registrations r
+               JOIN events e ON e.id = r.event_id
+               JOIN users u ON u.id = r.user_id
+               WHERE r.event_id = ? AND r.user_id = ?""",
+            (event_id, customer_id),
+        ).fetchone()
+        if row is None:
+            raise EventValidationError("Register for the event before simulating an IR entry.")
+        if self.connection.execute(
+            "SELECT 1 FROM event_attendance WHERE event_id = ? AND user_id = ?",
+            (event_id, customer_id),
+        ).fetchone():
+            raise EventValidationError("This customer has already logged an IR check-in for this event.")
+        with self.connection:
+            self.connection.execute(
+                "INSERT INTO event_attendance (event_id, user_id, sensor_name) VALUES (?, ?, ?)",
+                (event_id, customer_id, sensor_name),
+            )
+            detail = f"{row['customer_name']} entered via {sensor_name} sensor for {row['name']}"
+            self._record(event_id, customer_id, "attendance.logged", detail,
+                         [(customer_id, f"IR entry logged for {row['name']}.") ,
+                          (row["organiser_id"],
+                           f"{row['customer_name']} entered {row['name']} using the IR sensor.")])
+        self._dispatch(event_id, customer_id, "attendance.logged", detail)
