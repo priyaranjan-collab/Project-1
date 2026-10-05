@@ -11,7 +11,7 @@ Event Management is a local Flask + SQLite college project for event organisers 
 | Customer features | Browse, search, and filter events; register and cancel; view personal activity and notifications. |
 | Event pipeline | Validate action -> save to SQLite -> write audit log and notifications -> attempt optional TCP socket message. |
 | Monitoring | Dashboard cards poll for updated totals; multiprocessing workers calculate per-event metrics; events at 75% capacity are flagged. |
-| Stack | Python 3.10+, Flask, SQLite, HTML/CSS/JavaScript, `socket`, `multiprocessing`, SymPy, and Python `csv`. |
+| Stack | Python 3.10+, Flask, SQLite, HTML/CSS/JavaScript, Ultralytics YOLO, `socket`, `multiprocessing`, SymPy, and Python `csv`. |
 | Data location | `instance/events.sqlite3`, created and seeded automatically on first run. |
 
 ## Local demo accounts
@@ -53,6 +53,8 @@ optional socket_server.py          analytics / CSV / HTML dashboards
 ```
 
 The web process is independent of the socket server. Socket errors are intentionally ignored after a short timeout; database persistence remains authoritative. Dashboard cards poll a JSON endpoint every 12 seconds. Per-event metrics use `multiprocessing` spawn workers when multiple events exist. SymPy derives the integer seat threshold for the 75% capacity alert.
+
+Organisers can upload an event image for a YOLO person count. The detector uses the `yolov8s.pt` COCO model at higher image resolution for smaller subjects; failed model loading or inference is reported instead of replacing the result with an image-size estimate. Set `CROWD_MODEL_PATH` to use a local Ultralytics-compatible model.
 
 ## 2. Folder structure
 

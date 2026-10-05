@@ -6,8 +6,13 @@ import re
 import sqlite3
 import tempfile
 import unittest
+from io import BytesIO
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
-from app import create_app
+from werkzeug.datastructures import FileStorage
+
+from app import CrowdDetectionError, create_app, estimate_people_in_image
 
 
 class DashboardTestCase(unittest.TestCase):
@@ -155,6 +160,70 @@ class DashboardTestCase(unittest.TestCase):
         stats = self.client.get("/api/dashboard-stats")
         self.assertEqual(stats.status_code, 200)
         self.assertIn(b'"events":2', stats.data)
+
+    def test_crowd_detector_counts_person_boxes_at_high_resolution(self):
+        detector = Mock(return_value=[
+            SimpleNamespace(
+                names={0: "person", 1: "car"},
+                boxes=[
+                    SimpleNamespace(cls=[0]),
+                    SimpleNamespace(cls=[0]),
+                    SimpleNamespace(cls=[1]),
+                ],
+            )
+        ])
+        upload = FileStorage(stream=BytesIO(b"image"), filename="crowd.jpg")
+
+        with tempfile.TemporaryDirectory() as working_directory, \
+                patch("app.os.getcwd", return_value=working_directory), \
+                patch("app.get_crowd_model", return_value=detector):
+            count = estimate_people_in_image(upload)
+
+        self.assertEqual(count, 2)
+        detector.assert_called_once()
+        self.assertEqual(detector.call_args.kwargs, {
+            "verbose": False, "conf": 0.15, "imgsz": 1280, "classes": [0],
+        })
+
+    def test_crowd_detector_returns_zero_without_person_boxes(self):
+        detector = Mock(return_value=[
+            SimpleNamespace(names={0: "person"}, boxes=[])
+        ])
+        upload = FileStorage(stream=BytesIO(b"image"), filename="empty.jpg")
+
+        with tempfile.TemporaryDirectory() as working_directory, \
+                patch("app.os.getcwd", return_value=working_directory), \
+                patch("app.get_crowd_model", return_value=detector):
+            count = estimate_people_in_image(upload)
+
+        self.assertEqual(count, 0)
+
+    def test_crowd_detection_errors_are_not_replaced_by_estimates(self):
+        upload = FileStorage(stream=BytesIO(b"image"), filename="crowd.jpg")
+
+        with tempfile.TemporaryDirectory() as working_directory, \
+                patch("app.os.getcwd", return_value=working_directory), \
+                patch("app.get_crowd_model", side_effect=CrowdDetectionError("Model unavailable")):
+            with self.assertRaisesRegex(CrowdDetectionError, "Model unavailable"):
+                estimate_people_in_image(upload)
+
+    def test_crowd_detection_failure_is_returned_without_saving_a_count(self):
+        self.login("organiser@example.com", "organiser123")
+        with patch("app.estimate_people_in_image", side_effect=CrowdDetectionError("Model unavailable")):
+            response = self.client.post(
+                f"/organiser/events/{self.event_id()}/crowd-count",
+                data={
+                    "csrf_token": self.token(),
+                    "image": (BytesIO(b"image"), "crowd.jpg"),
+                },
+            )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertIn(b"Model unavailable", response.data)
+        with closing(sqlite3.connect(self.database)) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT COUNT(*) FROM event_crowd_counts"
+            ).fetchone()[0], 0)
 
     def test_passwords_are_hashed_in_sqlite(self):
         with closing(sqlite3.connect(self.database)) as connection:

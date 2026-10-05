@@ -3,6 +3,7 @@ from datetime import date
 from functools import wraps
 from io import BytesIO
 import os
+from pathlib import Path
 from uuid import uuid4
 
 from flask import (Flask, abort, flash, jsonify, redirect, render_template, request,
@@ -17,17 +18,38 @@ from report_generator import event_report
 from session_manager import csrf_token, sign_in, sign_out, validate_csrf
 
 
+class CrowdDetectionError(Exception):
+    def __init__(self, message, status_code=503):
+        super().__init__(message)
+        self.status_code = status_code
+
+
+_crowd_model = None
+
+
+def get_crowd_model():
+    global _crowd_model
+    if _crowd_model is None:
+        try:
+            from ultralytics import YOLO
+        except ImportError as exc:
+            raise CrowdDetectionError(
+                "Human detection is unavailable. Install the project requirements and retry."
+            ) from exc
+        _crowd_model = YOLO(os.environ.get("CROWD_MODEL_PATH", "yolov8s.pt"))
+    return _crowd_model
+
+
 def estimate_people_in_image(file_storage):
-    temp_path = None
+    filename = secure_filename(file_storage.filename or "crowd.jpg") or "crowd.jpg"
+    directory = Path(os.getcwd()) / "instance" / "crowd-temp"
+    temp_path = directory / f"{uuid4().hex}_{filename}"
     try:
-        from ultralytics import YOLO
-        filename = secure_filename(file_storage.filename or "crowd.jpg")
-        directory = os.path.join(os.getcwd(), "instance", "crowd-temp")
-        os.makedirs(directory, exist_ok=True)
-        temp_path = os.path.join(directory, f"{uuid4().hex}_{filename}")
+        directory.mkdir(parents=True, exist_ok=True)
         file_storage.save(temp_path)
-        model = YOLO("yolov8n.pt")
-        results = model(temp_path, verbose=False, conf=0.25)
+        results = get_crowd_model()(
+            str(temp_path), verbose=False, conf=0.15, imgsz=1280, classes=[0]
+        )
         count = 0
         for result in results:
             names = getattr(result, "names", {}) or {}
@@ -36,26 +58,15 @@ def estimate_people_in_image(file_storage):
                 label = (names.get(cls_id, "") or "").lower()
                 if label == "person":
                     count += 1
-        if count > 0:
-            return count
-    except Exception:
-        pass
-    try:
-        from PIL import Image
-        if temp_path is None:
-            filename = secure_filename(file_storage.filename or "crowd.jpg")
-            directory = os.path.join(os.getcwd(), "instance", "crowd-temp")
-            os.makedirs(directory, exist_ok=True)
-            temp_path = os.path.join(directory, f"{uuid4().hex}_{filename}")
-            file_storage.save(temp_path)
-        with Image.open(temp_path) as image:
-            width, height = image.size
-            return max(1, int((width * height) / 2600))
-    except Exception:
-        return 0
+        return count
+    except CrowdDetectionError:
+        raise
+    except Exception as exc:
+        raise CrowdDetectionError(
+            "Human detection failed. Check that the image is valid and the model is available."
+        ) from exc
     finally:
-        if temp_path and os.path.exists(temp_path):
-            os.remove(temp_path)
+        temp_path.unlink(missing_ok=True)
 
 
 def create_app(test_config=None):
@@ -333,7 +344,11 @@ def create_app(test_config=None):
         image = request.files.get("image")
         if image is None or not image.filename:
             return jsonify({"error": "Upload a crowd image before counting people."}), 400
-        count = estimate_people_in_image(image)
+        try:
+            count = estimate_people_in_image(image)
+        except CrowdDetectionError as exc:
+            app.logger.exception("Crowd detection failed for event %s", event_id)
+            return jsonify({"error": str(exc)}), exc.status_code
         with get_db():
             get_db().execute(
                 """INSERT INTO event_crowd_counts (event_id, detected_count, image_name)
